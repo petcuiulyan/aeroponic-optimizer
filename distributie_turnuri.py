@@ -72,7 +72,7 @@ def calculeaza_layout(L_utila, W_sera, pas_x, D_bazin, dist_y, culoar_min):
     total_turnuri = nr_x * len(y_positions)
     return nr_x, y_positions, magistrale_y, total_turnuri
 
-def randeaza_2d(L_sera, W_sera, L_tech, nr_x, y_positions, magistrale_y, pas_x, D_bazin):
+def randeaza_2d(L_sera, W_sera, L_tech, nr_x, y_positions, magistrale_y, pas_x, D_bazin, total_turnuri):
     fig, ax = plt.subplots(figsize=(16, 10))
     
     # Contur și Zonă Tehnică
