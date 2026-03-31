@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-
+ 
 # Configurare pagină
 st.set_page_config(page_title="Aeroponic Pro Designer", layout="wide")
 
