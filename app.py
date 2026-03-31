@@ -3,103 +3,117 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
-st.set_page_config(page_title="Aeroponic Precision Optimizer", layout="wide")
+st.set_page_config(page_title="Aeroponic Pro Configurator", layout="wide")
 
-st.title("📐 Optimizare Exactă: 10 Turnuri / Linie")
+st.title("📐 Optimizare Dinamică: Magistrală Centrală per Pereche")
 
-# --- SIDEBAR ---
-st.sidebar.header("📏 Configurație Seră")
-L_SERA = st.sidebar.number_input("Lungime Totală Seră (m)", value=12.0)
-W_SERA = st.sidebar.number_input("Lățime Totală Seră (m)", value=6.0)
-L_ZONA_LUCRU = st.sidebar.number_input("Lungime Zonă Tehnică (m)", value=2.0)
+# --- SIDEBAR: VARIABILE DE CONTROL ---
+st.sidebar.header("📏 Dimensiuni Seră")
+L_SERA = st.sidebar.number_input("Lungime Totală (m)", value=12.0)
+W_SERA = st.sidebar.number_input("Lățime Totală (m)", value=6.0)
+L_ZONA_LUCRU = st.sidebar.number_input("Zonă Tehnică / Germinare (m)", value=2.0)
 
-st.sidebar.header("⚙️ Setări Turn (Calcul Fix)")
+st.sidebar.header("⚙️ Distanțe Variabile (m)")
+dist_x = st.sidebar.slider("Distanță între turnuri pe aceeasi linie (X)", 0.2, 0.8, 0.4)
+dist_y_pereche = st.sidebar.slider("Distanță între linii (Y) - spațiu magistrală", 0.5, 0.9, 0.6)
+CULOAR_CENTRAL = st.sidebar.slider("Lățime Culoar Central (m)", 1.0, 2.0, 1.5)
+
 D_BAZIN = 0.67
-SPATIU_MINIM = 0.33 # Spațiul care completează până la 1 metru
-PAS_TURN = D_BAZIN + SPATIU_MINIM # Rezultă fix 1.0m
 
 # --- LOGICA MATEMATICĂ ---
 L_UTILA = L_SERA - L_ZONA_LUCRU
-# Calculăm numărul de turnuri pe lungime (strict)
-nr_turnuri_lungime = int(L_UTILA / PAS_TURN)
+# Pasul pe lungime: diametru + spațiul variabil ales
+pas_x = D_BAZIN + dist_x
+nr_turnuri_lungime = int(L_UTILA / pas_x)
 
-# Avem 4 linii de turnuri conform schiței tale (două perechi cu culoar între ele)
+# Calculăm dacă încap cele 2 perechi pe lățime (W)
+# Structura: [Turn-SpațiuMagistrală-Turn] -- Culoar -- [Turn-SpațiuMagistrală-Turn]
+latime_pereche = (D_BAZIN * 2) + dist_y_pereche
+latime_totala_necesara = (latime_pereche * 2) + CULOAR_CENTRAL
+
 total_turnuri = nr_turnuri_lungime * 4
 total_plante = total_turnuri * 40
 
 # --- VIZUALIZARE ---
-def generate_exact_map():
+def generate_dynamic_map():
     fig, ax = plt.subplots(figsize=(14, 7))
     
-    # 1. Contur Seră
+    # 1. Contur Seră & Zonă Tehnică
     ax.add_patch(patches.Rectangle((0, 0), L_SERA, W_SERA, linewidth=3, edgecolor='black', facecolor='none'))
+    ax.add_patch(patches.Rectangle((0, 0), L_ZONA_LUCRU, W_SERA, alpha=0.1, facecolor='blue'))
+    ax.text(L_ZONA_LUCRU/2, W_SERA/2, "ZONA\nTEHNICĂ", ha='center', fontweight='bold')
+
+    # 2. Culoar Central (Vizual)
+    ax.add_patch(patches.Rectangle((L_ZONA_LUCRU, W_SERA/2 - CULOAR_CENTRAL/2), L_SERA - L_ZONA_LUCRU, CULOAR_CENTRAL, alpha=0.05, facecolor='orange'))
+
+    # 3. Calcul Poziții Y (Centrate pe culoar)
+    # Perechea de Jos
+    y1 = (W_SERA / 2) - (CULOAR_CENTRAL / 2) - D_BAZIN
+    y2 = y1 - dist_y_pereche - D_BAZIN
     
-    # 2. Zona Tehnică (2m)
-    ax.add_patch(patches.Rectangle((0, 0), L_ZONA_LUCRU, W_SERA, alpha=0.2, facecolor='red', label='Zonă Tehnică'))
-    ax.text(L_ZONA_LUCRU/2, W_SERA/2, f"ZONA TEHNICĂ\n{L_ZONA_LUCRU}m", ha='center', va='center', fontweight='bold')
+    # Perechea de Sus
+    y3 = (W_SERA / 2) + (CULOAR_CENTRAL / 2)
+    y4 = y3 + dist_y_pereche + D_BAZIN
 
-    # 3. Culoar Central (1.5m)
-    ax.add_patch(patches.Rectangle((L_ZONA_LUCRU, (W_SERA/2 - 0.75)), L_SERA - L_ZONA_LUCRU, 1.5, alpha=0.1, facecolor='orange'))
-    ax.text(L_SERA - 1, W_SERA/2, "CULOAR 1.5m", color='orange', fontweight='bold', ha='right')
+    y_linii = [y1, y2, y3, y4]
 
-    # 4. Poziționare Rânduri (Y)
-    # Rândurile sunt grupate câte două lângă pereți
-    distanta_perete = 0.4
-    y_pos = [
-        distanta_perete, 
-        distanta_perete + D_BAZIN + 0.3, # Grupul de jos
-        W_SERA - distanta_perete - D_BAZIN - 0.3 - D_BAZIN, # Grupul de sus
-        W_SERA - distanta_perete - D_BAZIN # Grupul de sus
-    ]
-
-    # 5. Desenare Turnuri
+    # 4. Desenare Turnuri și Magistrale
     for i in range(nr_turnuri_lungime):
-        x_center = L_ZONA_LUCRU + (i * PAS_TURN) + (D_BAZIN / 2)
+        x_pos = L_ZONA_LUCRU + (i * pas_x)
         
-        # Desenăm pe cele 4 rânduri
-        for y in y_pos:
-            circle = plt.Circle((x_center, y + D_BAZIN/2), D_BAZIN/2, color='#2ecc71', ec='black', lw=1)
-            ax.add_patch(circle)
-            
-        # Adăugăm cota de 1 metru la primul element
+        for y in y_linii:
+            # Turn
+            ax.add_patch(plt.Circle((x_pos + D_BAZIN/2, y + D_BAZIN/2), D_BAZIN/2, color='#2ecc71', ec='darkgreen', alpha=0.8))
+        
+        # Linie de cotă între turnuri (X)
         if i == 0:
-            ax.annotate('', xy=(L_ZONA_LUCRU, -0.3), xytext=(L_ZONA_LUCRU + PAS_TURN, -0.3),
-                        arrowprops=dict(arrowstyle='<->'))
-            ax.text(L_ZONA_LUCRU + 0.5, -0.6, "Pas 1.0m\n(0.67+0.33)", ha='center', fontsize=9)
+            ax.plot([x_pos + D_BAZIN, x_pos + pas_x], [y1 + D_BAZIN/2, y1 + D_BAZIN/2], color='red', lw=1)
+            ax.text(x_pos + D_BAZIN + dist_x/2, y1 + D_BAZIN/2 + 0.1, f"{dist_x}m", color='red', fontsize=8, ha='center')
 
-    # 6. Magistrale (Linii Apă)
-    ax.plot([L_ZONA_LUCRU, L_SERA], [distanta_perete/2, distanta_perete/2], color='blue', lw=3, label='Magistrală Laterală')
-    ax.plot([L_ZONA_LUCRU, L_SERA], [W_SERA - distanta_perete/2, W_SERA - distanta_perete/2], color='blue', lw=3)
+    # 5. Magistrale Apă/Curent (Prin mijlocul perechilor)
+    # Magistrala Jos
+    mag_y_jos = y1 - (dist_y_pereche / 2)
+    ax.plot([L_ZONA_LUCRU, L_SERA], [mag_y_jos, mag_y_jos], color='blue', lw=2, linestyle='--', label='Magistrală Apă/Curent')
+    ax.text(L_SERA - 0.5, mag_y_jos + 0.1, f"Magistrală (Gap: {dist_y_pereche}m)", color='blue', fontsize=7, ha='right')
+    
+    # Magistrala Sus
+    mag_y_sus = y3 + D_BAZIN + (dist_y_pereche / 2)
+    ax.plot([L_ZONA_LUCRU, L_SERA], [mag_y_sus, mag_y_sus], color='blue', lw=2, linestyle='--')
 
-    # Setări axă
-    ax.set_xticks(range(int(L_SERA) + 1))
-    ax.set_yticks(range(int(W_SERA) + 1))
-    ax.grid(True, linestyle=':', alpha=0.5)
+    # Ajustări grafic
+    ax.set_xlim(-0.5, L_SERA + 0.5)
+    ax.set_ylim(-0.5, W_SERA + 0.5)
     ax.set_aspect('equal')
-    plt.title(f"Plan de Amplasament: {nr_turnuri_lungime} Turnuri/Linie | Total: {total_turnuri} Turnuri", fontsize=14)
+    ax.grid(True, which='both', linestyle=':', alpha=0.3)
+    plt.title(f"Configurație: {total_turnuri} Turnuri | Pas X: {round(pas_x, 2)}m | Spațiu Magistrală: {dist_y_pereche}m")
     
     return fig
 
-# --- AFIȘARE REZULTATE ---
-c1, c2 = st.columns([3, 1])
+# --- UI INTERFACE ---
+col_map, col_stats = st.columns([3, 1])
 
-with c1:
-    st.pyplot(generate_exact_map())
+with col_map:
+    st.pyplot(generate_dynamic_map())
 
-with c2:
-    st.subheader("📊 Date Proiect")
-    st.metric("Lungime Utilă", f"{L_UTILA} m")
-    st.metric("Turnuri / Linie", nr_turnuri_lungime)
+with col_stats:
+    st.subheader("📊 Rezultate")
     st.metric("Total Turnuri", total_turnuri)
-    st.metric("Total Plante", total_plante)
+    st.metric("Total Răsaduri", total_plante)
+    st.write(f"**Turnuri pe rând:** {nr_turnuri_lungime}")
+    st.write(f"**Lățime necesară:** {round(latime_totala_necesara, 2)} m")
     
-    st.divider()
-    st.info(f"Fiecare linie de {L_UTILA}m este acum optimizată pentru un pas de fix {PAS_TURN}m.")
+    if latime_totala_necesara > W_SERA:
+        st.error("⚠️ Atenție: Configurația depășește lățimea serei!")
+    else:
+        st.success("✅ Configurația încape în spațiu.")
 
-st.subheader("📦 Listă Materiale (BOM)")
-df_bom = pd.DataFrame({
-    "Articol": ["Turnuri Hidroponice", "Răsaduri necesare", "Magistrală Principală", "Cablaj Senzori (estimat)", "Electrovalve"],
-    "Cantitate": [total_turnuri, total_plante, f"2 x {L_UTILA}m", f"{L_SERA * 2}m", nr_turnuri_lungime * 2],
-    "Observații": ["10 nivele/turn", "40 plante/turn", "Amplasată lateral", "Conexiune ESP32", "1 per pereche turnuri"]
+st.divider()
+
+# --- TABEL PIESE ---
+st.subheader("📦 Lista de materiale optimizată")
+df_piese = pd.DataFrame({
+    "Articol": ["Turnuri Aeroponice", "Plante (Răsaduri)", "Magistrală Ø25", "Electrovalve", "Senzori EC/pH", "Cablaj ESP32"],
+    "Cantitate": [total_turnuri, total_plante, f"2 x {round(L_UTILA, 1)} m", f"{nr_turnuri_lungime * 2} buc", "1 buc (IBC1)", f"~{total_turnuri * 2} m"],
+    "Rol": ["Producție", "Biomasă", "Alimentare rânduri", "Control udare pereche", "Monitorizare nutrienți", "Senzori + Valve"]
 })
-st.table(df_bom)
+st.table(df_piese)
