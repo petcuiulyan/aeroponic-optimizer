@@ -22,7 +22,7 @@ nr_x, y_positions, magistrale_y, total_t = dist.calculeaza_layout(L_UTILA, W, PA
 
 # AFIȘARE
 st.header(f"🗺️ Layout Smart Automat: {total_t} Turnuri")
-fig = dist.randeaza_2d(L, W, L_T, nr_x, y_positions, magistrale_y, PAS_X, D_BAZIN)
+fig = dist.randeaza_2d(L, W, L_T, nr_x, y_positions, magistrale_y, PAS_X, D_BAZIN, total_t)
 st.pyplot(fig)
 
 st.success(f"Configurația generată automat: {len(y_positions)} rânduri. Numărul de rânduri a crescut dinamic pe lățimea de {W}m.")
