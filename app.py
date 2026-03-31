@@ -1,37 +1,29 @@
-# app.py
 import streamlit as st
-import configuratie_sera as cfg
 import distributie_turnuri as dist
-import nutrienti as nut
-import automatizare as auto
 
-st.set_page_config(page_title="Master Aeroponic Control", layout="wide")
+st.set_page_config(layout="wide")
 
-# --- INPUTURI GENERALE ---
-st.sidebar.header("⚙️ Configurare Generală")
+# SIDEBAR - Parametrii tăi variabili
+st.sidebar.header("📏 Configurație Generală")
 L = st.sidebar.number_input("Lungime Seră", value=12.0)
 W = st.sidebar.number_input("Lățime Seră", value=6.0)
 L_T = st.sidebar.number_input("Zonă Tehnică", value=2.0)
 
-# --- CALCUL LOGIC ÎN CASCADĂ ---
-dim = cfg.get_dimensiuni_sera(L, W, 3.0, L_T)
-nr_x, y_pos = dist.calcul_pozitii(dim["L_utila"], W, L_T, 1.0, 0.6, 0.67, 1.5)
-total_t = nr_x * 4
-hidraulica = nut.calcul_hidraulic(total_t, dim["L_utila"])
-electronica = auto_necesar = auto.necesar_senzori(total_t)
+st.sidebar.header("📐 Distanțe Optimizare")
+dist_x = st.sidebar.slider("Distanță între turnuri (X)", 0.2, 0.6, 0.4)
+dist_y = st.sidebar.slider("Spațiu Magistrală (Y)", 0.4, 0.8, 0.6)
+culoar = st.sidebar.slider("Culoar Central", 1.0, 2.0, 1.5)
 
-# --- INTERFAȚĂ TABURI ---
-tab1, tab2, tab3, tab4 = st.tabs(["📐 Layout 2D", "💧 Sistem Nutrienți", "🔌 Automatizare", "❄️ Climatizare"])
+D_BAZIN = 0.67
+PAS_X = D_BAZIN + dist_x
 
-with tab1:
-    fig = dist.randeaza_2d(L, W, L_T, nr_x, y_pos, 0.67, 1.0, 1.5)
-    st.pyplot(fig)
-    st.metric("Total Turnuri", total_t)
+# LOGICA
+L_UTILA = L - L_T
+nr_x, total_t = dist.calculeaza_layout(L_UTILA, PAS_X)
 
-with tab2:
-    st.write(f"Necesari {hidraulica['ibc_count']} IBC-uri de 1000L.")
-    st.write(f"Debit pompă minim: {hidraulica['debit_pompa_recomandat']} LPM")
+# AFIȘARE
+st.header("🗺️ Layout 2D Detaliat")
+fig = dist.randeaza_2d(L, W, L_T, nr_x, PAS_X, dist_y, D_BAZIN, culoar)
+st.pyplot(fig)
 
-with tab3:
-    st.write(f"Electrovalve necesare: {electronica['electrovalve']}")
-    st.write(f"Puncte de monitorizare ESP32: {electronica['esp32_count']}")
+st.success(f"Configurație generată: {nr_x} coloane x 4 rânduri = {total_t} turnuri.")
