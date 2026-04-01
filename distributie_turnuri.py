@@ -30,60 +30,63 @@ def calculeaza_layout(L_utila, W_sera, pas_x, D_bazin, dist_y, culoar_min):
 def randeaza_2d(L_sera, W_sera, L_tech, nr_x, y_positions, magistrale_y, pas_x, D_bazin, dist_y, total_turnuri):
     fig, ax = plt.subplots(figsize=(16, 10))
     
-    # 1. Spațiu și Zonă Tehnică
+    # 1. Contur Seră
     ax.add_patch(patches.Rectangle((0, 0), L_sera, W_sera, lw=3, ec='black', fc='none'))
     ax.add_patch(patches.Rectangle((0, 0), L_tech, W_sera, alpha=0.08, fc='gray'))
 
-    # --- 2. CONFIGURARE HIDRAULICĂ ZONĂ TEHNICĂ ---
-    # Coordonate IBC-uri
+    # --- 2. ZONA TEHNICĂ ---
     y_ibc2 = 0.5
-    y_ibc1 = y_ibc2 + 1.0 + 1.0 # 1m distanță între ele
+    y_ibc1 = y_ibc2 + 2.0 
     
-    # Desenare IBC 2 (Rezervor de lucru / Buffer)
+    # IBC 2 & IBC 1
     ax.add_patch(patches.Rectangle((0.2, y_ibc2), 1, 1, fc='#a2d2ff', ec='blue', lw=2, zorder=5))
-    ax.text(0.7, y_ibc2+0.5, "IBC 2\n(STOCK)", ha='center', fontweight='bold', fontsize=8)
-    
-    # Desenare IBC 1 (Preparare Nutrienți)
     ax.add_patch(patches.Rectangle((0.2, y_ibc1), 1, 1, fc='#e0f2fe', ec='blue', lw=1.5, zorder=5))
+    ax.text(0.7, y_ibc2+0.5, "IBC 2\n(STOCK)", ha='center', fontweight='bold', fontsize=8)
     ax.text(0.7, y_ibc1+0.5, "IBC 1\n(PREP)", ha='center', fontweight='bold', fontsize=8)
 
-    # POMPA DE TRANSFER (Între IBC1 și IBC2)
-    p_trans_x, p_trans_y = 0.7, y_ibc2 + 1.5
-    ax.plot(p_trans_x, p_trans_y, 'go', markersize=8, zorder=6) # Verde pentru transfer
-    ax.text(p_trans_x + 0.2, p_trans_y, "Pompă\nTransfer", fontsize=7, color='green')
-    # Legături Transfer: IBC1 -> Pompă -> IBC2
-    ax.plot([0.7, 0.7], [y_ibc1, p_trans_y], color='green', lw=1.5, ls='--')
-    ax.plot([0.7, 0.7], [p_trans_y, y_ibc2 + 1.0], color='green', lw=1.5, ls='--')
+    # POMPA TRANSFER (IBC1 -> IBC2)
+    p_trans_y = (y_ibc1 + y_ibc2 + 1.0) / 2
+    ax.plot(0.7, p_trans_y, 'go', markersize=8, zorder=6)
+    ax.plot([0.7, 0.7], [y_ibc1, y_ibc2 + 1.0], color='green', lw=1.5, ls='--', alpha=0.6)
 
-    # POMPA PRINCIPALĂ HPA (Lângă IBC 2)
+    # POMPA HPA (IBC2 -> Sistem)
     p_hpa_x, p_hpa_y = L_tech - 0.5, y_ibc2 + 0.5
     ax.plot(p_hpa_x, p_hpa_y, 'ro', markersize=12, zorder=10)
-    ax.text(p_hpa_x, p_hpa_y - 0.4, "POMPA HPA\n(20 BAR)", ha='center', color='red', fontweight='bold', fontsize=8)
-    # Legătură IBC 2 -> Pompă HPA
-    ax.plot([1.2, p_hpa_x], [y_ibc2 + 0.5, p_hpa_y], color='blue', lw=2.5)
+    ax.plot([1.2, p_hpa_x], [y_ibc2 + 0.5, p_hpa_y], color='blue', lw=2)
 
-    # 3. Turnuri
+    # --- 3. TURNURI & LEGĂTURI ---
     for i in range(nr_x):
-        x = L_tech + (i * pas_x) + 0.2
-        for y in y_positions:
-            ax.add_patch(plt.Circle((x + D_bazin/2, y + D_bazin/2), D_bazin/2, 
+        x_t = L_tech + (i * pas_x) + 0.2 + D_bazin/2
+        y_base_t = L_tech + (i * pas_x) + 0.2 # Coordonata X de start a bazinului
+        
+        for y_t in y_positions:
+            # Desenare Turn
+            ax.add_patch(plt.Circle((x_t, y_t + D_bazin/2), D_bazin/2, 
                                     color='#2ecc71', alpha=0.4, ec='darkgreen', lw=0.5))
+            
+            # LEGĂTURA LA MAGISTRALĂ (Feeder)
+            # Găsim magistrala cea mai apropiată de acest rând
+            closest_mag = min(magistrale_y, key=lambda m: abs(m - (y_t + D_bazin/2)))
+            # Desenăm legătura doar dacă magistrala deservește acest rând (distanță mică)
+            if abs(closest_mag - (y_t + D_bazin/2)) < (D_bazin + dist_y):
+                ax.plot([x_t, x_t], [closest_mag, y_t + D_bazin/2], color='blue', lw=1, alpha=0.3)
 
-    # 4. Magistrale și Distribuție
+    # --- 4. MAGISTRALE ORIZONTALE ---
     for my in magistrale_y:
-        # Magistrala orizontală
+        # Linia principală de rând
         ax.plot([L_tech, L_sera - 0.5], [my, my], color='blue', lw=3, zorder=6)
-        # Legătura din Pompa HPA către Magistrale (Traseu Curat)
-        ax.plot([p_hpa_x, p_hpa_x, L_tech], [p_hpa_y, my, my], color='blue', lw=1.5, alpha=0.5)
+        # Conexiunea verticală de la Pompa HPA la fiecare magistrală
+        ax.plot([p_hpa_x, p_hpa_x, L_tech], [p_hpa_y, my, my], color='blue', lw=1.5, alpha=0.4)
 
-    # 5. Colector Retur (Cyan)
-    # Colectează de la capătul magistralelor și se întoarce în IBC 2
+    # --- 5. RETUR ---
     if magistrale_y:
         max_m_y = max(magistrale_y)
+        # Colector vertical la capăt
         ax.plot([L_sera - 0.5, L_sera - 0.5], [max_m_y, 0.15], color='cyan', lw=3)
+        # Magistrala de retur pe jos
         ax.plot([L_sera - 0.5, 0.7], [0.15, 0.15], color='cyan', lw=2.5, ls='--')
+        # Intrare în IBC 2
         ax.plot([0.7, 0.7], [0.15, y_ibc2], color='cyan', lw=2.5, ls='--')
-        ax.text(L_sera/2, 0.25, "RETUR COLECTARE", color='darkcyan', fontsize=7, ha='center', fontweight='bold')
 
     ax.set_aspect('equal')
     ax.set_xlim(-0.5, L_sera + 0.5)
