@@ -45,7 +45,7 @@ def randeaza_2d(L_sera, W_sera, L_tech, nr_x, y_positions, magistrale_y, pas_x, 
     # Pompe
     p_hpa_x, p_hpa_y = L_tech - 0.5, y_ibc2 + 0.5
     ax.plot(p_hpa_x, p_hpa_y, 'ro', markersize=15, zorder=10) 
-    ax.text(p_hpa_x, p_hpa_y + 0.4, "POMPĂ HPA\n(20 BAR)", color='red', fontweight='bold', ha='center', fontsize=8)
+    ax.text(p_hpa_x, p_hpa_y + 0.4, "POMPĂ HPA\n(120W)", color='red', fontweight='bold', ha='center', fontsize=8)
     
     p_tr_y = (y_ibc1 + y_ibc2 + 1.0) / 2
     ax.plot(0.7, p_tr_y, 'go', markersize=10, zorder=10)
