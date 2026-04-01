@@ -7,7 +7,7 @@ L = st.sidebar.number_input("Lungime Seră (m)", value=20.0)
 W = st.sidebar.number_input("Lățime Seră (m)", value=12.0)
 L_T = st.sidebar.number_input("Zonă Tehnică (m)", value=2.5)
 
-D_BAZIN = 0.67
+D_BAZIN = 0.58
 dist_x = st.sidebar.slider("Spațiu între turnuri pe lungime (m)", 0.2, 0.6, 0.33)
 dist_y = st.sidebar.slider("Spațiu între rânduri pereche (m)", 0.4, 0.8, 0.5)
 culoar_min = st.sidebar.slider("Culoar minim de trecere (m)", 1.0, 2.0, 1.2)
