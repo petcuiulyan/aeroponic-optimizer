@@ -1,3 +1,4 @@
+# app.py
 import streamlit as st
 import matplotlib.pyplot as plt
 import distributie_turnuri as dist
@@ -32,7 +33,7 @@ L_TECH = 2.5    # Zona rezervată IBC-urilor și panoului
 D_BAZIN = 0.67  # Diametrul bazei turnului
 L_UTILA = L - L_TECH
 
-# Calcul layout folosind modulul dedicat
+# Calcul layout folosind modulul tău avansat
 nr_x, y_pos, mag_y, total_t = dist.calculeaza_layout(
     L_UTILA, W, D_BAZIN + dist_x, D_BAZIN, dist_y, culoar_min
 )
@@ -42,7 +43,7 @@ nr_x, y_pos, mag_y, total_t = dist.calculeaza_layout(
 if pagina == "📐 Layout & Proiectare":
     st.header(f"Plan Tehnic Distribuție: {total_t} Turnuri")
     
-    # Afișare Grafică
+    # Afișare Grafică Detaliată (include IBC, Pompe, Retur)
     fig = dist.randeaza_2d(L, W, L_TECH, nr_x, y_pos, mag_y, D_BAZIN + dist_x, D_BAZIN, dist_y, total_t, culoar_min)
     st.pyplot(fig)
     
@@ -64,13 +65,12 @@ if pagina == "📐 Layout & Proiectare":
         
     with c3:
         st.subheader("Sistem Hidraulic")
-        st.write(f"• Magistrale: **{len(mag_y)} linii**")
-        st.write(f"• Debit necesar: **{hidraulica['debit_pompa_recomandat']:.1f} LPM**")
+        st.write(f"• Magistrale active: **{len(mag_y)} linii**")
+        st.write(f"• Debit necesar: **{hidraulica['debit_pompa_recomandat']:.2f} LPM**")
 
 elif pagina == "🤖 Automatizare Live":
     st.header("🤖 Monitorizare și Dozare Preciză (700L)")
     
-    # 1. Citiri Senzori (Simulare/Manual Input)
     col_senzor1, col_senzor2, col_senzor3, col_senzor4 = st.columns(4)
     ph_live = col_senzor1.number_input("📡 pH Actual", value=7.2, step=0.1)
     ec_live = col_senzor2.number_input("📡 EC Actual (mS/cm)", value=0.8, step=0.1)
@@ -79,57 +79,40 @@ elif pagina == "🤖 Automatizare Live":
 
     st.divider()
 
-    # 2. Setări Target & Control
     s1, s2, s3 = st.columns([2, 2, 1])
     ph_target = s1.slider("Interval pH Dorit", 4.0, 9.0, (5.9, 6.5))
     ec_target = s2.slider("Interval EC Dorit", 0.5, 3.0, (1.2, 1.6))
     
-    if s3.button("🚀 PORNEȘTE SISTEMUL", use_container_width=True): 
+    if s3.button("🚀 PORNEȘTE", use_container_width=True): 
         st.session_state.active_auto = True
-    if s3.button("🛑 OPRIRE URGENȚĂ", use_container_width=True): 
+    if s3.button("🛑 OPRIRE", use_container_width=True): 
         st.session_state.active_auto = False
 
-    # 3. Logica de Procesare (Calcul Timpi + Status Relee)
     inst_auto = auto.AutomatizareSera()
-    # Calculăm timpii de injecție bazat pe deficit (nutrienti.py)
     timpi_calculati = nutr.calculeaza_dozare_precisa(ph_live, ec_live, ph_target, ec_target, 700)
-    # Mapăm timpii pe starea on/off a releelor (automatizare.py)
     stari_relee = inst_auto.actualizeaza_stari(timpi_calculati, st.session_state.active_auto)
     mesaje, _ = inst_auto.proceseaza_automat(ph_live, ec_live, ph_target, ec_target, st.session_state.active_auto)
 
-    # 4. Vizualizare Actuatori
     st.subheader("⚙️ Status Relee (HPA & Peristaltice)")
     cols_act = st.columns(5)
-    nume_relee = list(stari_relee.keys())
-    
-    for i, nume in enumerate(nume_relee):
+    for i, (nume, activ) in enumerate(stari_relee.items()):
         with cols_act[i]:
-            st.write(f"**{nume}**")
-            activ = stari_relee[nume]
             t_exec = timpi_calculati.get(nume, 0.0)
-            
             color = "#2ecc71" if activ else "#bdc3c7"
-            label = f"ON ({t_exec}s)" if activ and t_exec > 0 else ("ACTIVE" if activ else "OFF")
-            
-            st.markdown(f"""
-                <div style="background-color:{color}; color:white; padding:15px; 
-                border-radius:10px; text-align:center; font-weight:bold;">
-                {label}
-                </div>
-                """, unsafe_allow_html=True)
+            label = f"ON ({t_exec}s)" if activ and t_exec > 0 else ("ON" if activ else "OFF")
+            st.markdown(f"<div style='background:{color};color:white;padding:15px;border-radius:10px;text-align:center;font-weight:bold;'>{nume}<br>{label}</div>", unsafe_allow_html=True)
 
     for msg in mesaje:
         st.info(msg)
 
 elif pagina == "🛒 Listă Materiale":
     st.header("🛒 Listă Necesar Materiale (Construcție la Cheie)")
-    st.warning("Toate componentele sunt calculate pentru un mediu cu umiditate ridicată (protecție IP55).")
+    st.warning("Toate componentele electrice sunt calculate cu protecție IP55 (rezistente la umiditate).")
     
-    # Calcul deviz din noul modul
+    # REZOLVARE EROARE: Apelăm funcția corectă din materiale_necesare.py
     nr_mag = len(mag_y)
     deviz = mat.calculeaza_deviz_detaliat(total_t, nr_mag, L, W)
     
-    # Afișare structurată pe categorii
     for categorie, materiale in deviz.items():
         with st.expander(categorie, expanded=True):
             col_mat, col_cant = st.columns([3, 1])
@@ -137,4 +120,4 @@ elif pagina == "🛒 Listă Materiale":
                 col_mat.write(f"🔹 {nume}")
                 col_cant.write(f"**x {cantitate}**")
 
-    st.success("💡 Sfat: Adăugați un buffer de 10% la lungimea cablurilor și a țevilor pentru a acoperi pierderile la montaj.")
+    st.success("💡 Sfat: Adăugați o marjă de 10% pentru țevi și cabluri pentru a acoperi pierderile la tăiere.")
