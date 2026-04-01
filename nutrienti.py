@@ -1,47 +1,42 @@
 # nutrienti.py
 
+def calcul_hidraulic(nr_turnuri, L_magistrala):
+    # 40 plante/turn, fiecare turn are nevoie de aprox 2L/min în ciclu de ceață
+    debit_necesar_lpm = nr_turnuri * 0.1 # estimat pentru duze HPA
+    return {
+        "ibc_count": 2, # Standard conform schiței tale
+        "lungime_magistrala_apa": L_magistrala * 2,
+        "debit_pompa_recomandat": debit_necesar_lpm * 1.2 # +20% rezervă
+    }
+
 def calculeaza_dozare_precisa(ph_actual, ec_actual, ph_lim, ec_lim, volum_maxim=700):
-    """
-    Algoritm de calcul pentru dozare controlată (abordare cu minus).
-    Returnează secundele de funcționare pentru fiecare pompă.
-    """
-    # Parametri tehnici
-    raport_nutrienti_ml_l = 0.9  # 9ml la 10L (limita de siguranță)
-    debit_pompa_ml_s = 1.0       # Presupunem 1ml/secundă
-    factor_siguranta = 0.3       # Corectăm doar 30% din deficit pe iterație
+    """Algoritm bazat pe raportul de 9ml/10L și volum de lucru de 700L"""
+    raport_ml_l = 0.9  # 9ml la 10L
+    debit_s = 1.0      # Presupunem 1ml/s debit pompă
+    f_siguranta = 0.3  # Dozăm doar 30% din deficit pentru siguranță
     
-    comenzi_pompe = {
+    # Folosim denumirile EXACTE ale pompelor din clasa AutomatizareSera
+    timpi = {
         "Peristaltică A": 0.0,
         "Peristaltică B": 0.0,
         "Peristaltică pH UP": 0.0,
         "Peristaltică pH DOWN": 0.0
     }
     
-    # --- CALCUL EC ---
-    if ec_actual < ec_lim[0]: # ec_lim[0] este limita inferioară (ex: 1.1)
-        # Calculăm deficitul relativ față de țintă
-        deficit_relativ = (ec_lim[0] - ec_actual) / ec_lim[0]
-        
-        # Cantitatea teoretică pentru volumul de 700L la raportul stabilit
-        ml_teoretic = volum_maxim * raport_nutrienti_ml_l
-        
-        # Aplicăm deficitul și factorul de siguranță
-        ml_de_injectat = ml_teoretic * deficit_relativ * factor_siguranta
-        
-        secunde = round(ml_de_injectat / debit_pompa_ml_s, 1)
-        comenzi_pompe["Peristaltică A"] = secunde
-        comenzi_pompe["Peristaltică B"] = secunde
+    # Calcul EC (Nutrienți A+B)
+    if ec_actual < ec_lim[0]:
+        deficit = (ec_lim[0] - ec_actual) / ec_lim[0]
+        ml_necesar = (volum_maxim * raport_ml_l) * deficit * f_siguranta
+        timpi["Peristaltică A"] = timpi["Peristaltică B"] = round(ml_necesar / debit_s, 1)
 
-    # --- CALCUL pH ---
-    # Estimare: 2ml soluție corectoare per 0.1 unitate pH la 700L
-    if ph_actual > ph_lim[1]: # pH prea mare (necesită DOWN)
+    # Calcul pH
+    if ph_actual > ph_lim[1]: # pH prea mare
         deficit_ph = ph_actual - ph_lim[1]
-        ml_ph = (deficit_ph / 0.1) * 1.5 * factor_siguranta # 1.5ml per 0.1 pH
-        comenzi_pompe["Peristaltică pH DOWN"] = round(ml_ph / debit_pompa_ml_s, 1)
-        
-    elif ph_actual < ph_lim[0]: # pH prea mic (necesită UP)
+        ml_acid = (deficit_ph / 0.1) * 1.5 * f_siguranta # 1.5ml per 0.1 unitate pH la 700L
+        timpi["Peristaltică pH DOWN"] = round(ml_acid / debit_s, 1)
+    elif ph_actual < ph_lim[0]: # pH prea mic
         deficit_ph = ph_lim[0] - ph_actual
-        ml_ph = (deficit_ph / 0.1) * 1.5 * factor_siguranta
-        comenzi_pompe["Peristaltică pH UP"] = round(ml_ph / debit_pompa_ml_s, 1)
-
-    return comenzi_pompe
+        ml_baza = (deficit_ph / 0.1) * 1.5 * f_siguranta
+        timpi["Peristaltică pH UP"] = round(ml_baza / debit_s, 1)
+        
+    return timpi
