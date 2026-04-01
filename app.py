@@ -20,7 +20,7 @@ nr_x, y_positions, magistrale_y, total_t = dist.calculeaza_layout(L_UTILA, W, PA
 
 # Afișare
 st.header(f"🚀 Configurație Maximă Detectată: {total_t} Turnuri")
-fig = dist.randeaza_2d(L, W, L_T, nr_x, y_positions, magistrale_y, PAS_X, D_BAZIN, dist_y, total_t)
+fig = dist.randeaza_2d(L, W, L_T, nr_x, y_positions, magistrale_y, PAS_X, D_BAZIN, dist_y, total_t, culoar_min)
 st.pyplot(fig)
 
 # Statistici
