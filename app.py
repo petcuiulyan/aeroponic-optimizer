@@ -4,7 +4,7 @@ import automatizare as auto
 
 # ... (partea de Layout rămâne neschimbată) ...
 
-if pagina == "🤖 Sistem Automatizare (Control)":
+if pagina == "🤖 Sistem Automatizare (Control)";
     st.header("🤖 Control Automatizat cu Interval (Range)")
     
     sistem = auto.AutomatizareSera()
