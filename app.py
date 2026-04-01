@@ -1,28 +1,47 @@
 import streamlit as st
-import distributie_turnuri as dist
+import automatizare as auto
 
-st.set_page_config(layout="wide")
+# --- UI SIDEBAR PENTRU SENSORI (Simulare) ---
+st.sidebar.header("📡 Date Senzori (Real-Time)")
+ph_val = st.sidebar.number_input("Citire pH (Analog)", 0.0, 14.0, 6.8)
+ec_val = st.sidebar.number_input("Citire EC (ms/cm)", 0.0, 5.0, 1.2)
+temp_apa = st.sidebar.number_input("Temp Apă (DS18B20)", 10.0, 40.0, 22.5)
+co2_val = st.sidebar.number_input("CO2 (ppm)", 300, 2000, 450)
 
-L = st.sidebar.number_input("Lungime Seră (m)", value=20.0)
-W = st.sidebar.number_input("Lățime Seră (m)", value=12.0)
-L_T = st.sidebar.number_input("Zonă Tehnică (m)", value=2.5)
+# --- LOGICA DE CONTROL ---
+sistem = auto.AutomatizareSera()
+logica_nutritie = sistem.logica_dozare(ph_val, ec_val)
+logica_mediu = sistem.monitorizare_mediu(25, 60, co2_val)
 
-D_BAZIN = 0.58
-dist_x = st.sidebar.slider("Spațiu între turnuri pe lungime (m)", 0.2, 0.6, 0.33)
-dist_y = st.sidebar.slider("Spațiu între rânduri pereche (m)", 0.4, 0.8, 0.5)
-culoar_min = st.sidebar.slider("Culoar minim de trecere (m)", 1.0, 2.0, 1.2)
+# --- AFIȘARE ÎN DASHBOARD ---
+st.header("🎮 Centru de Comandă Automatizat")
 
-PAS_X = D_BAZIN + dist_x
-L_UTILA = L - L_T
+c1, c2, c3 = st.columns(3)
 
-# Calcul Cascadă
-nr_x, y_positions, magistrale_y, total_t = dist.calculeaza_layout(L_UTILA, W, PAS_X, D_BAZIN, dist_y, culoar_min)
+with c1:
+    st.subheader("🧪 Management Nutrienți")
+    st.metric("pH", ph_val, delta=round(6.0 - ph_val, 2), delta_color="inverse")
+    st.metric("EC", f"{ec_val} ms/cm")
+    for msg in logica_nutritie:
+        st.write(f"• {msg}")
 
-# Afișare
-st.header(f"🚀 Configurație Maximă Detectată: {total_t} Turnuri")
-fig = dist.randeaza_2d(L, W, L_T, nr_x, y_positions, magistrale_y, PAS_X, D_BAZIN, dist_y, total_t, culoar_min)
-st.pyplot(fig)
+with c2:
+    st.subheader("⚡ Stare Relee (8 Ch)")
+    relee = {
+        "Ch1: Pompa 120W": sistem.pompa_120w,
+        "Ch2: Electrovalvă M1": True,
+        "Ch3: Peristaltică A": sistem.pompe_peristaltice["A"],
+        "Ch4: Peristaltică B": sistem.pompe_peristaltice["B"],
+        "Ch5: pH Down": sistem.pompe_peristaltice["pH_Down"],
+        "Ch6: Ventilator": False,
+        "Ch7: CO2 Valve": False,
+        "Ch8: Lumină": True
+    }
+    for nume, stare in relee.items():
+        st.toggle(nume, value=stare, disabled=True)
 
-# Statistici
-st.write(f"S-au instalat **{len(y_positions)} rânduri** de turnuri.")
-st.info(f"Capacitate totală plante: **{total_t * 40}** (la 40 plante/turn)")
+with c3:
+    st.subheader("🌡️ Mediu & Siguranță")
+    st.write(logica_mediu)
+    st.progress(co2_val/2000, text=f"Concentrație CO2: {co2_val}ppm")
+    st.info(f"Senzor IBC: {'Nivel Optim' if nivel_ibc2 > 20 else 'NECESAR TRANSFER'}")
