@@ -1,15 +1,15 @@
-# app.py
 import streamlit as st
 import distributie_turnuri as dist
 import automatizare as auto
 import nutrienti as nutr
 import configuratie_sera as conf
 
-st.set_page_config(layout="wide", page_title="Sistem Aeroponic v2.0")
+st.set_page_config(layout="wide", page_title="Aeroponic Optimizer v2")
 
 if 'active_auto' not in st.session_state:
     st.session_state.active_auto = False
 
+# --- SIDEBAR ---
 st.sidebar.title("🍀 Control Panel")
 pagina = st.sidebar.radio("Navigare:", ["📐 Layout Seră", "🤖 Automatizare Live"])
 
@@ -19,9 +19,8 @@ dist_x = st.sidebar.slider("Spațiu X (m)", 0.1, 0.6, 0.33)
 dist_y = st.sidebar.slider("Spațiu Y (m)", 0.1, 0.8, 0.5)
 culoar_min = st.sidebar.slider("Culoar (m)", 0.8, 2.0, 1.2)
 
-# Calcule Fundamentale
-L_T = 2.5
-D_B = 0.67
+# Calcule Generale
+L_T, D_B = 2.5, 0.67
 nr_x, y_pos, mag_y, total_t = dist.calculeaza_layout(L-L_T, W, D_B+dist_x, D_B, dist_y, culoar_min)
 
 if pagina == "📐 Layout Seră":
@@ -29,22 +28,27 @@ if pagina == "📐 Layout Seră":
     fig = dist.randeaza_2d(L, W, L_T, nr_x, y_pos, mag_y, D_B+dist_x, D_B, dist_y, total_t, culoar_min)
     st.pyplot(fig)
     
-    # Afișare info din configuratie_sera și nutrienti (păstrare info)
-    dim = conf.get_dimensiuni_sera(L, W, 4.0, L_T)
-    hidraulic = nutr.calcul_hidraulic(total_t, L-L_T)
-    st.json({"Dimensiuni": dim, "Hidraulic": hidraulic})
+    col_a, col_b = st.columns(2)
+    with col_a:
+        st.subheader("Configurație")
+        st.write(conf.get_dimensiuni_sera(L, W, 4.0, L_T))
+        st.write(f"Tăvi germinare: {conf.zona_germinare(L_T, W)}")
+    with col_b:
+        st.subheader("Hidraulică")
+        st.write(nutr.calcul_hidraulic(total_t, L-L_T))
 
 else:
-    st.header("🤖 Măsurători Live & Ajustare Automată (700L)")
+    st.header("🤖 Automatizare Live (Calcul Precizie 700L)")
     
+    # 1. Senzori
     c1, c2, c3, c4 = st.columns(4)
     ph_live = c1.number_input("pH Senzor", value=7.2, step=0.1)
     ec_live = c2.number_input("EC Senzor", value=0.8, step=0.1)
-    c3.metric("Temp. Apă", "23°C")
-    c4.metric("Volum Lucru", "700 L")
+    c3.metric("Volum Lucru", "700 L", "-300L Buffer")
+    c4.metric("Status", "ACTIV" if st.session_state.active_auto else "OFF")
 
+    # 2. Control
     st.divider()
-
     s1, s2, s3 = st.columns([2, 2, 1])
     ph_lim = s1.slider("Limite pH", 4.0, 9.0, (5.9, 6.5))
     ec_lim = s2.slider("Limite EC", 0.5, 3.0, (1.1, 1.6))
@@ -52,25 +56,20 @@ else:
     if s3.button("🚀 START AJUSTARE", use_container_width=True): st.session_state.active_auto = True
     if s3.button("🛑 STOP", use_container_width=True): st.session_state.active_auto = False
 
-    # LOGICA INTEGRATA
+    # 3. Logica de calcul
     inst_auto = auto.AutomatizareSera()
-    # Calculăm timpii preciși din nutrienti.py (700L)
     timpi_dozare = nutr.calculeaza_dozare_precisa(ph_live, ec_live, ph_lim, ec_lim, 700)
-    # Actualizăm stările pompelor în automatizare.py
-    stari = inst_auto.actualizeaza_stari(timpi_dozare, st.session_state.active_auto)
+    stari_relee = inst_auto.actualizeaza_stari(timpi_dozare, st.session_state.active_auto)
     mesaje, _ = inst_auto.proceseaza_automat(ph_live, ec_live, ph_lim, ec_lim, st.session_state.active_auto)
 
-    st.divider()
-
+    # 4. Vizualizare Actuatori
+    st.subheader("⚙️ Status Relee")
     cols = st.columns(5)
-    for i, (nume, stare_activa) in enumerate(stari.items()):
+    for i, (nume, activ) in enumerate(stari_relee.items()):
         with cols[i]:
             st.write(f"**{nume}**")
-            manual = st.checkbox("Manual", key=f"m_{nume}")
-            t_exec = timpi_dozare.get(nume, 0.0)
-            
-            color = "#2ecc71" if (stare_activa or manual) else "#bdc3c7"
-            label = f"ON ({t_exec}s)" if stare_activa else ("MANUAL" if manual else "OFF")
-            st.markdown(f"<div style='background:{color}; color:white; padding:10px; border-radius:5px; text-align:center;'>{label}</div>", unsafe_allow_html=True)
+            t_label = f"{timpi_dozare.get(nume, 0.0)}s" if nume in timpi_dozare else ""
+            color = "#2ecc71" if activ else "#bdc3c7"
+            st.markdown(f"<div style='background:{color}; color:white; padding:10px; border-radius:5px; text-align:center;'>{t_label if activ else 'OFF'}</div>", unsafe_allow_html=True)
 
-    for m in mesaje: st.write(f"• {m}")
+    for m in mesaje: st.info(m)
