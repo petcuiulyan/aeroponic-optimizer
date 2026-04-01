@@ -1,4 +1,4 @@
-import matplotlib.pyplot as plt
+pimport matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
 def calculeaza_layout(L_utila, W_sera, pas_x, D_bazin, dist_y, culoar_min):
@@ -27,68 +27,79 @@ def calculeaza_layout(L_utila, W_sera, pas_x, D_bazin, dist_y, culoar_min):
     total_turnuri = nr_x * len(y_positions)
     return nr_x, y_positions, magistrale_y, total_turnuri
 
-def randeaza_2d(L_sera, W_sera, L_tech, nr_x, y_positions, magistrale_y, pas_x, D_bazin, dist_y, total_turnuri):
-    fig, ax = plt.subplots(figsize=(16, 10))
+def randeaza_2d(L_sera, W_sera, L_tech, nr_x, y_positions, magistrale_y, pas_x, D_bazin, dist_y, total_turnuri, culoar_min):
+    fig, ax = plt.subplots(figsize=(18, 11))
     
-    # 1. Contur Seră
+    # 1. Contur și Zonă Tehnică
     ax.add_patch(patches.Rectangle((0, 0), L_sera, W_sera, lw=3, ec='black', fc='none'))
     ax.add_patch(patches.Rectangle((0, 0), L_tech, W_sera, alpha=0.08, fc='gray'))
+    ax.text(L_tech/2, W_sera - 0.5, "ZONĂ TEHNICĂ", ha='center', fontweight='bold', alpha=0.3)
 
-    # --- 2. ZONA TEHNICĂ ---
-    y_ibc2 = 0.5
-    y_ibc1 = y_ibc2 + 2.0 
-    
-    # IBC 2 & IBC 1
+    # 2. IBC-uri
+    y_ibc2, y_ibc1 = 0.5, 2.5
     ax.add_patch(patches.Rectangle((0.2, y_ibc2), 1, 1, fc='#a2d2ff', ec='blue', lw=2, zorder=5))
     ax.add_patch(patches.Rectangle((0.2, y_ibc1), 1, 1, fc='#e0f2fe', ec='blue', lw=1.5, zorder=5))
-    ax.text(0.7, y_ibc2+0.5, "IBC 2\n(STOCK)", ha='center', fontweight='bold', fontsize=8)
-    ax.text(0.7, y_ibc1+0.5, "IBC 1\n(PREP)", ha='center', fontweight='bold', fontsize=8)
+    ax.text(0.7, y_ibc2+0.5, "IBC 2\n(STOCK)", ha='center', va='center', fontweight='bold', fontsize=9)
+    ax.text(0.7, y_ibc1+0.5, "IBC 1\n(PREP)", ha='center', va='center', fontweight='bold', fontsize=9)
 
-    # POMPA TRANSFER (IBC1 -> IBC2)
-    p_trans_y = (y_ibc1 + y_ibc2 + 1.0) / 2
-    ax.plot(0.7, p_trans_y, 'go', markersize=8, zorder=6)
-    ax.plot([0.7, 0.7], [y_ibc1, y_ibc2 + 1.0], color='green', lw=1.5, ls='--', alpha=0.6)
-
-    # POMPA HPA (IBC2 -> Sistem)
+    # 3. Pompe și Legături Tehnice
     p_hpa_x, p_hpa_y = L_tech - 0.5, y_ibc2 + 0.5
-    ax.plot(p_hpa_x, p_hpa_y, 'ro', markersize=12, zorder=10)
-    ax.plot([1.2, p_hpa_x], [y_ibc2 + 0.5, p_hpa_y], color='blue', lw=2)
+    ax.plot(p_hpa_x, p_hpa_y, 'ro', markersize=15, zorder=10) # Pompa HPA
+    ax.text(p_hpa_x, p_hpa_y + 0.3, "POMPĂ HPA\n(20 BAR)", color='red', fontweight='bold', ha='center', fontsize=8)
+    
+    p_tr_y = (y_ibc1 + y_ibc2 + 1.0) / 2
+    ax.plot(0.7, p_tr_y, 'go', markersize=10, zorder=10) # Pompa Transfer
+    ax.text(0.1, p_tr_y, "POMPĂ\nTRANSFER", color='green', fontweight='bold', fontsize=8)
+    ax.plot([0.7, 0.7], [y_ibc1, y_ibc2 + 1.0], color='green', lw=2, ls='--', alpha=0.5)
 
-    # --- 3. TURNURI & LEGĂTURI ---
+    # 4. Turnuri și Feedere (Legături)
     for i in range(nr_x):
-        x_t = L_tech + (i * pas_x) + 0.2 + D_bazin/2
-        y_base_t = L_tech + (i * pas_x) + 0.2 # Coordonata X de start a bazinului
-        
+        x_c = L_tech + (i * pas_x) + 0.2 + D_bazin/2
         for y_t in y_positions:
-            # Desenare Turn
-            ax.add_patch(plt.Circle((x_t, y_t + D_bazin/2), D_bazin/2, 
-                                    color='#2ecc71', alpha=0.4, ec='darkgreen', lw=0.5))
+            y_c = y_t + D_bazin/2
+            ax.add_patch(plt.Circle((x_c, y_c), D_bazin/2, color='#2ecc71', alpha=0.4, ec='darkgreen'))
             
-            # LEGĂTURA LA MAGISTRALĂ (Feeder)
-            # Găsim magistrala cea mai apropiată de acest rând
-            closest_mag = min(magistrale_y, key=lambda m: abs(m - (y_t + D_bazin/2)))
-            # Desenăm legătura doar dacă magistrala deservește acest rând (distanță mică)
-            if abs(closest_mag - (y_t + D_bazin/2)) < (D_bazin + dist_y):
-                ax.plot([x_t, x_t], [closest_mag, y_t + D_bazin/2], color='blue', lw=1, alpha=0.3)
+            # Legătura la magistrală
+            closest_m = min(magistrale_y, key=lambda m: abs(m - y_c))
+            if abs(closest_m - y_c) < (D_bazin):
+                ax.plot([x_c, x_c], [closest_m, y_c], color='blue', lw=0.8, alpha=0.4)
 
-    # --- 4. MAGISTRALE ORIZONTALE ---
-    for my in magistrale_y:
-        # Linia principală de rând
+    # 5. Magistrale și Cotele de Dimensiuni
+    for idx, my in enumerate(magistrale_y):
         ax.plot([L_tech, L_sera - 0.5], [my, my], color='blue', lw=3, zorder=6)
-        # Conexiunea verticală de la Pompa HPA la fiecare magistrală
+        ax.text(L_sera - 2, my + 0.1, f"Magistrală {idx+1}", color='blue', fontsize=7)
         ax.plot([p_hpa_x, p_hpa_x, L_tech], [p_hpa_y, my, my], color='blue', lw=1.5, alpha=0.4)
 
-    # --- 5. RETUR ---
+    # --- COTE (DIMENSIUNI PE PLAN) ---
+    # Cotă Pas X (între primele două turnuri)
+    if nr_x > 1:
+        x1 = L_tech + 0.2 + D_bazin/2
+        x2 = x1 + pas_x
+        ax.annotate('', xy=(x1, W_sera-0.2), xytext=(x2, W_sera-0.2), arrowprops=dict(arrowstyle='<->', color='gray'))
+        ax.text((x1+x2)/2, W_sera-0.15, f"Pas X: {pas_x:.2f}m", ha='center', fontsize=8, color='gray')
+
+    # Cotă Culoar (între primele două grupuri)
+    if len(y_positions) >= 3:
+        y_c1 = y_positions[1] + D_bazin
+        y_c2 = y_positions[2]
+        ax.annotate('', xy=(L_sera-0.3, y_c1), xytext=(L_sera-0.3, y_c2), arrowprops=dict(arrowstyle='<->', color='orange'))
+        ax.text(L_sera-0.2, (y_c1+y_c2)/2, f"Culoar: {y_c2-y_c1:.2f}m", va='center', rotation=90, fontsize=8, color='orange')
+
+    # Cotă Spațiu Pereche (dist_y)
+    if len(y_positions) >= 2:
+        y_p1 = y_positions[0] + D_bazin
+        y_p2 = y_positions[1]
+        ax.annotate('', xy=(L_tech+0.5, y_p1), xytext=(L_tech+0.5, y_p2), arrowprops=dict(arrowstyle='<->', color='blue'))
+        ax.text(L_tech+0.6, (y_p1+y_p2)/2, f"Spațiu Y: {dist_y:.2f}m", va='center', fontsize=7, color='blue')
+
+    # 6. Retur
     if magistrale_y:
         max_m_y = max(magistrale_y)
-        # Colector vertical la capăt
         ax.plot([L_sera - 0.5, L_sera - 0.5], [max_m_y, 0.15], color='cyan', lw=3)
-        # Magistrala de retur pe jos
         ax.plot([L_sera - 0.5, 0.7], [0.15, 0.15], color='cyan', lw=2.5, ls='--')
-        # Intrare în IBC 2
         ax.plot([0.7, 0.7], [0.15, y_ibc2], color='cyan', lw=2.5, ls='--')
+        ax.text(L_sera/2, 0.05, "CONDUCTĂ RETUR (RECIRCULARE)", color='darkcyan', fontweight='bold', fontsize=8, ha='center')
 
     ax.set_aspect('equal')
-    ax.set_xlim(-0.5, L_sera + 0.5)
-    ax.set_ylim(-0.5, W_sera + 0.5)
+    plt.title(f"PLAN TEHNIC AEROPONIC - {total_turnuri} Turnuri", fontsize=16, fontweight='bold', pad=20)
     return fig
