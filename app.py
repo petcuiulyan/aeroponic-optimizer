@@ -106,8 +106,34 @@ elif pagina == "🤖 Automatizare Live":
         st.info(msg)
 
 elif pagina == "🛒 Listă Materiale":
-    st.header("🛒 Listă Necesar Materiale (Construcție la Cheie)")
-    st.warning("Toate componentele electrice sunt calculate cu protecție IP55 (rezistente la umiditate).")
+    st.header("🛒 Deviz General Materiale")
+    
+    # Calcul deviz folosind H (inaltimea) din sidebar
+    nr_mag = len(mag_y)
+    deviz = mat.calculeaza_deviz_detaliat(total_t, nr_mag, L, W, H)
+    
+    # --- BUTON DOWNLOAD PROIECT ---
+    st.subheader("📄 Descarcă Documentația Proiectului")
+    doc_txt = mat.genereaza_text_specificatii(deviz, total_t, L, W)
+    st.download_button(
+        label="📥 Descarcă Lista de Achiziții (.txt)",
+        data=doc_txt,
+        file_name="plan_achizitii_sera.txt",
+        mime="text/plain",
+        use_container_width=True
+    )
+    
+    st.divider()
+
+    # Afișare pe coloane pentru lizibilitate
+    col_a, col_b = st.columns(2)
+    categorii = list(deviz.keys())
+    
+    for i, cat in enumerate(categorii):
+        target_col = col_a if i % 2 == 0 else col_b
+        with target_col.expander(cat, expanded=True):
+            for nume, cant in deviz[cat].items():
+                st.write(f"🔹 {nume}: **{cant}**")
     
     # REZOLVARE EROARE: Apelăm funcția corectă din materiale_necesare.py
     nr_mag = len(mag_y)
