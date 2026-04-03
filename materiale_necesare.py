@@ -2,68 +2,55 @@
 
 def calculeaza_deviz_detaliat(total_turnuri, nr_magistrale, L_sera, W_sera, H_sera):
     """
-    Generează un deviz complet bazat pe lista extinsă de piese.
-    Include structură, climă, hidraulică și automatizare avansată.
+    Generează devizul bazat pe lista TA de materiale.
+    Include acum calcule pentru structură, climă și electrice.
     """
-    
-    # --- 1. STRUCTURĂ METALICĂ ȘI ÎNVELIȘ ---
     perimetru = 2 * (L_sera + W_sera)
-    suprafata_folie = (L_sera * W_sera * 1.5) + (perimetru * H_sera) # estimare cu boltă
+    suprafata_mp = L_sera * W_sera
     
-    # --- 2. CLIMATIZARE ȘI VENTILAȚIE ---
-    nr_ventilatoare_evacuare = 1 if (L_sera * W_sera) < 100 else 2
-    nr_ventilatoare_recirculare = int(L_sera / 5) # un ventilator la fiecare 5m
-    
-    # --- 3. HIDRAULICĂ (DETALIATĂ) ---
-    lungime_magistrala_25mm = L_sera * nr_magistrale
-    lungime_retur_20mm = L_sera + W_sera
-    nr_miniflotoare = 2 # unul per IBC
-    
-    # --- 4. ILUMINAT ȘI ELECTRICE ---
-    nr_corpuri_led = total_turnuri # 1 corp Full Spectrum vertical per turn
+    # --- CALCULE STRUCTURĂ ---
+    nr_arce = int(L_sera / 2) + 1 # un arc la fiecare 2 metri
     
     return {
-        "🏗️ Structură și Înveliș (Sera)": {
-            "Țeavă rectangulară (Stâlpi/Grinzi) - ml": round(perimetru * 3, 1),
-            "Țeavă rotundă (Arce) - ml": round(L_sera * 2.5, 1),
-            "Folie UV dublă (pernă aer) - mp": round(suprafata_folie * 1.2, 1),
-            "Ventilator mic pernă aer": 1,
-            "Plasă insecte laterală (ml)": perimetru,
-            "Plasă umbrire (mp)": L_sera * W_sera
+        "🏗️ Structură Seră & Înveliș": {
+            "Țeavă rectangulară stâlpi/grinzi (ml)": round(perimetru * 2 + (nr_arce * 2), 1),
+            "Țeavă rotundă arce (ml)": round(nr_arce * W_sera * 1.4, 1), # calcul arcadă
+            "Contravântuiri (set)": 8,
+            "Folie UV dublă (mp)": round(suprafata_mp * 2.5, 1),
+            "Ventilator mic pernă aer + Tub": 1,
+            "Plasă umbrire + Plasă insecte (mp)": round(suprafata_mp + (perimetru * 2), 1),
+            "Sistem Cooling Pad": 1 if W_sera > 6 else 0
         },
-        "❄️ Climatizare și Cooling": {
-            "Ventilator evacuare mare": nr_ventilatoare_evacuare,
-            "Ventilator recirculare interior": nr_ventilatoare_recirculare,
-            "Sistem Cooling Pad (set)": 1 if W_sera > 8 else 0,
-            "Pompă recirculare cooling": 1 if W_sera > 8 else 0
-        },
-        "💧 Sistem Hidraulic HPA": {
-            "Turnuri hidroponice complete": total_turnuri,
-            "IBC 1000L (Stocare/Prep)": 2,
-            "Pompă HPA 120W (Main)": 1,
+        "💧 Sistem Hidroponic & Hidraulic": {
+            "Turn hidroponic - complet (40 plante)": total_turnuri,
+            "Bazin IBC 1000L": 2,
+            "Pompă recirculare magistrale (HPA)": 1,
             "Pompă transfer (IBC1 -> IBC2)": 1,
-            "Țeavă PVC 25mm (Magistrale) - m": round(lungime_magistrala_25mm, 1),
-            "Țeavă PVC 20mm (Retur) - m": round(lungime_retur_20mm, 1),
-            "Furtun 8mm (Conexiuni turn) - m": total_turnuri * 2.5,
-            "Miniflotoare (control nivel)": nr_miniflotoare,
-            "Robineți și Racorduri (set)": total_turnuri + 10
+            "Țeavă PVC 25 mm (m)": round(L_sera * nr_magistrale, 1),
+            "Țeavă PVC 20 mm (m)": round(L_sera + W_sera, 1),
+            "Furtun 8mm (m)": total_turnuri * 2.5,
+            "Miniflotoare + Robineți": total_turnuri + 2,
+            "Racorduri, Coturi, Reducții (set)": 1 
         },
-        "💡 Iluminat și Automatizare Pro": {
-            "LED Full Spectrum Vertical": nr_corpuri_led,
-            "Tablou automatizare complet": 1,
-            "ESP32 + Relee + Surse": 1,
-            "Senzor CO2 / Lumină / Temp-Hum": 1,
-            "Tester pH și EC industrial": 1,
-            "Pompe peristaltice (A/B/pH+/pH-)": 4,
-            "Prize și Întrerupătoare (set)": total_turnuri + 10
+        "⚡ Electrice & Automatizare": {
+            "Tablou automatizare + ESP32": 1,
+            "Senzori (CO2, Umiditate, Temp, Lumină)": 1,
+            "Iluminat LED Full Spectrum (buc)": total_turnuri,
+            "Tester pH și EC (industrial)": 1,
+            "Temporizator LED + Relee": 1,
+            "Cablu principal + Cablu LED (m)": round(total_turnuri * 5, 1),
+            "Siguranțe (General, 16A, 10A)": 6,
+            "Prize + Întrerupătoare": total_turnuri + 5
         }
     }
 
-def genereaza_text_specificatii(deviz, total_t, L, W):
-    text = f"=== PROIECT TEHNIC SERA AEROPONICA ===\n"
-    text += f"Configuratie: {total_t} turnuri | Suprafata: {L*W}mp\n\n"
+def genereaza_text_specificatii(deviz, total_t, L, W, H):
+    """Generează conținutul pentru fișierul .txt"""
+    text = f"FISA TEHNICA SERA - {total_t} TURNURI\n"
+    text += f"Configuratie: {L}m x {W}m x {H}m\n"
+    text += "="*40 + "\n\n"
     for cat, mat in deviz.items():
-        text += f"[{cat}]\n"
+        text += f"[{cat.upper()}]\n"
         for k, v in mat.items():
             text += f" - {k}: {v}\n"
         text += "\n"
