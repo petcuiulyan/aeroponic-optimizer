@@ -1,71 +1,70 @@
 # materiale_necesare.py
 
-def calculeaza_deviz_detaliat(total_turnuri, nr_magistrale, L_sera, W_sera):
+def calculeaza_deviz_detaliat(total_turnuri, nr_magistrale, L_sera, W_sera, H_sera):
     """
-    Calculează necesarul de materiale 'la cheie' bazat pe configurația serei.
-    Include fiecare robinet, clemă și priză individuală.
+    Generează un deviz complet bazat pe lista extinsă de piese.
+    Include structură, climă, hidraulică și automatizare avansată.
     """
-    # --- 1. HIDRAULICĂ (CONEXIUNI INDIVIDUALE) ---
-    # Fiecare turn are propriul set de conexiuni pentru mentenanță independentă
-    robineti_izolare = total_turnuri  # 1 robinet per turn
-    teuri_pvc = total_turnuri * 2     # conexiune magistrală + bifurcație
-    coturi_pvc = total_turnuri * 2    # direcționare spre duze
-    duze_mist = total_turnuri * 2     # 2 duze per turn pentru acoperire 360
-    cleme_fixare_teava = total_turnuri * 3 # fixare pe structura verticală
-    furtun_presiune_m = total_turnuri * 2.5 # legătura între duze și robinet
     
-    # --- 2. ELECTRICE (ALIMENTARE INDIVIDUALĂ) ---
-    # 1 turn = 1 priză (pentru pompe individuale sau iluminat dedicat)
-    # Protecție IP55 obligatorie pentru mediu umed
-    prize_ip55 = total_turnuri + 8  # +8 pentru: 4 peristaltice, 1 pompa 120W, 1 router/PC, 2 extra
-    stechere_mascul = total_turnuri + 5
-    # Calcul cablu: 3.5m per turn + lungimea magistralelor
-    cablu_alimentare_m = (total_turnuri * 3.5) + (L_sera * 2) 
-    canal_cablu_m = L_sera * nr_magistrale
-    tablou_electric = 1
-    sigurante_automate = 6 # Grupate: Pompe, Peristaltice, Senzori, Lumini, Automatizare, General
+    # --- 1. STRUCTURĂ METALICĂ ȘI ÎNVELIȘ ---
+    perimetru = 2 * (L_sera + W_sera)
+    suprafata_folie = (L_sera * W_sera * 1.5) + (perimetru * H_sera) # estimare cu boltă
     
-    # --- 3. STRUCTURĂ ȘI RECIPIENTE ---
-    bazine_colectoare_turn = total_turnuri
-    teava_pvc_verticala_2m = total_turnuri # corpul turnului (Ø110 sau Ø160)
-    ibc_1000l = 2 # 1 stoc, 1 prep
-    suport_metalic_turn = total_turnuri
+    # --- 2. CLIMATIZARE ȘI VENTILAȚIE ---
+    nr_ventilatoare_evacuare = 1 if (L_sera * W_sera) < 100 else 2
+    nr_ventilatoare_recirculare = int(L_sera / 5) # un ventilator la fiecare 5m
     
-    # --- 4. AUTOMATIZARE ȘI SENZORI ---
-    pompe_peristaltice = 4
-    kit_senzor_ph_ec = 1
-    microcontroler_esp32 = 1
-    modul_relee_8_canale = 1
-    sursa_alimentare_12v = 2 # 1 pentru pompe, 1 pentru senzori/controler
-
+    # --- 3. HIDRAULICĂ (DETALIATĂ) ---
+    lungime_magistrala_25mm = L_sera * nr_magistrale
+    lungime_retur_20mm = L_sera + W_sera
+    nr_miniflotoare = 2 # unul per IBC
+    
+    # --- 4. ILUMINAT ȘI ELECTRICE ---
+    nr_corpuri_led = total_turnuri # 1 corp Full Spectrum vertical per turn
+    
     return {
-        "Hidraulică (Instalație Turnuri)": {
-            "Robineți sferă 1/2 (izolare per turn)": robineti_izolare,
-            "Duze pulverizare fine (Mist)": duze_mist,
-            "Teuri și fitinguri PVC 20mm": teuri_pvc,
-            "Coturi PVC 20mm": coturi_pvc,
-            "Furtun presiune (m)": round(furtun_presiune_m, 1),
-            "Cleme fixare rapidă": cleme_fixare_teava
+        "🏗️ Structură și Înveliș (Sera)": {
+            "Țeavă rectangulară (Stâlpi/Grinzi) - ml": round(perimetru * 3, 1),
+            "Țeavă rotundă (Arce) - ml": round(L_sera * 2.5, 1),
+            "Folie UV dublă (pernă aer) - mp": round(suprafata_folie * 1.2, 1),
+            "Ventilator mic pernă aer": 1,
+            "Plasă insecte laterală (ml)": perimetru,
+            "Plasă umbrire (mp)": L_sera * W_sera
         },
-        "Electrice (Power & Control IP55)": {
-            "Prize IP55 (protecție umiditate)": prize_ip55,
-            "Ștechere IP44": stechere_mascul,
-            "Cablu MYYM 3x1.5 (m)": round(cablu_alimentare_m, 1),
-            "Canal cablu / Tub cofrat (m)": round(canal_cablu_m, 1),
-            "Siguranțe automate (linii separate)": sigurante_automate,
-            "Tablou distribuție central": tablou_electric
+        "❄️ Climatizare și Cooling": {
+            "Ventilator evacuare mare": nr_ventilatoare_evacuare,
+            "Ventilator recirculare interior": nr_ventilatoare_recirculare,
+            "Sistem Cooling Pad (set)": 1 if W_sera > 8 else 0,
+            "Pompă recirculare cooling": 1 if W_sera > 8 else 0
         },
-        "Componente Structură Turn": {
-            "Teavă PVC Ø110/Ø160 (2m)": teava_pvc_verticala_2m,
-            "Bazine colectoare (bază turn)": bazine_colectoare_turn,
-            "Coșulețe (net pots) 40/turn": total_turnuri * 40,
-            "Suport metalic / fixare turn": suport_metalic_turn
+        "💧 Sistem Hidraulic HPA": {
+            "Turnuri hidroponice complete": total_turnuri,
+            "IBC 1000L (Stocare/Prep)": 2,
+            "Pompă HPA 120W (Main)": 1,
+            "Pompă transfer (IBC1 -> IBC2)": 1,
+            "Țeavă PVC 25mm (Magistrale) - m": round(lungime_magistrala_25mm, 1),
+            "Țeavă PVC 20mm (Retur) - m": round(lungime_retur_20mm, 1),
+            "Furtun 8mm (Conexiuni turn) - m": total_turnuri * 2.5,
+            "Miniflotoare (control nivel)": nr_miniflotoare,
+            "Robineți și Racorduri (set)": total_turnuri + 10
         },
-        "Sistem Central & Automatizare": {
-            "IBC 1000L (Stocare & Nutrienți)": ibc_1000l,
-            "Pompă presiune HPA 120W": 1,
-            "Pompe Peristaltice (A, B, pH+, pH-)": pompe_peristaltice,
-            "Senzori pH/EC + Controler ESP32": 1,
-            "Surse alimentare 12V DC": sursa_alimentare_12v
+        "💡 Iluminat și Automatizare Pro": {
+            "LED Full Spectrum Vertical": nr_corpuri_led,
+            "Tablou automatizare complet": 1,
+            "ESP32 + Relee + Surse": 1,
+            "Senzor CO2 / Lumină / Temp-Hum": 1,
+            "Tester pH și EC industrial": 1,
+            "Pompe peristaltice (A/B/pH+/pH-)": 4,
+            "Prize și Întrerupătoare (set)": total_turnuri + 10
         }
     }
+
+def genereaza_text_specificatii(deviz, total_t, L, W):
+    text = f"=== PROIECT TEHNIC SERA AEROPONICA ===\n"
+    text += f"Configuratie: {total_t} turnuri | Suprafata: {L*W}mp\n\n"
+    for cat, mat in deviz.items():
+        text += f"[{cat}]\n"
+        for k, v in mat.items():
+            text += f" - {k}: {v}\n"
+        text += "\n"
+    return text
