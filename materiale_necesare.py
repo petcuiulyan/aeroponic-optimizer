@@ -1,31 +1,46 @@
 # materiale_necesare.py
 
 def calculeaza_deviz_detaliat(total_turnuri, nr_magistrale, L_sera, W_sera, H_sera):
-    perimetru = 2 * (L_sera + W_sera)
-    suprafata_mp = L_sera * W_sera
+    """
+    Formule dinamice bazate pe geometrie:
+    """
+    # --- CALCUL STRUCTURĂ (DINAMIC) ---
+    nr_arce = int(L_sera / 2) + 1  # Un arc la fiecare 2 metri
     
-    # --- LOGICA NOUA CONFORM COMENTARIILOR TALE ---
-    # PVC 25mm: Distanta de la pompa la M1, M2, M3 (estimat 1/3 din lungime per magistrala)
+    # Stâlpii: Înălțimea (H) influențează direct lungimea stâlpilor laterali
+    # Presupunem 2 stâlpi per arc (stânga/dreapta)
+    stalpi_ml = nr_arce * 2 * H_sera 
+    
+    # Grinzi longitudinale: 4 rânduri pe toată lungimea serei
+    grinzi_ml = L_sera * 4 
+    
+    # Arce: Calculăm lungimea unui arc de cerc (aproximare 1.5 * lățime pentru boltă)
+    arce_ml = nr_arce * (W_sera * 1.5)
+    
+    # Folia UV: Acoperă acoperișul (L * Arce_ml) + cele două fețe (W * H * 2)
+    suprafata_folie = (L_sera * (W_sera * 1.6)) + (2 * (W_sera * H_sera))
+    
+    # Plasă insecte: Perimetrul serei * Înălțime
+    plasa_ml = (2 * (L_sera + W_sera)) * 1.2 # marjă 20%
+
+    # --- HIDRAULICĂ OPTIMIZATĂ ---
     pvc_25_dist = (L_sera * 0.3) * nr_magistrale 
-    # PVC 20mm: Toata teava pentru magistralele propriu-zise
     pvc_20_dist = L_sera * nr_magistrale
-    # Furtun 8mm: 0.5m per turn + 5% marja
     furtun_8_dist = (total_turnuri * 0.5) * 1.05
     
-    # LED-uri: Minim 2 per turn
+    # LED-uri și Electrice
     led_total = total_turnuri * 2
-    # Conectori separatie: 1 la 2 turnuri
     conectori = int(total_turnuri / 2)
 
     return {
-        "🏗️ Structură Seră & Înveliș": {
-            "Țeavă rectangulară stâlpi/grinzi (ml)": 138.0,
-            "Țeavă rotundă arce (ml)": 138.6,
+        "🏗️ Structură Seră & Înveliș (Calculat din H)": {
+            "Țeavă rectangulară stâlpi/grinzi (ml)": round(stalpi_ml + grinzi_ml, 1),
+            "Țeavă rotundă arce (ml)": round(arce_ml, 1),
             "Contravântuiri (set)": 8.0,
-            "Folie UV dublă (mp)": 450.0,
+            "Folie UV dublă (mp)": round(suprafata_folie * 1.1, 1), # +10% pierderi
             "Ventilator mic pernă aer + Tub": 1.0,
-            "Plasă umbrire + insecte (mp)": 296.0,
-            "Sistem Cooling Pad": 1.0
+            "Plasă umbrire + insecte (mp)": round(plasa_ml, 1),
+            "Sistem Cooling Pad": 1.0 if W_sera > 6 else 0.0
         },
         "💧 Sistem Hidraulic HPA": {
             "Turn hidroponic complet (40 plante)": float(total_turnuri),
@@ -45,18 +60,7 @@ def calculeaza_deviz_detaliat(total_turnuri, nr_magistrale, L_sera, W_sera, H_se
             "Iluminat LED Full Spectrum (2x/turn)": float(led_total),
             "Tester pH și EC industrial": 1.0,
             "Cablu principal + LED (m)": float(total_turnuri * 5),
-            "Prize IP55": 107.0,
+            "Prize IP55": float(total_turnuri + 5),
             "Conectori separație (1 la 2 turnuri)": float(conectori)
         }
     }
-
-def genereaza_text_specificatii(deviz, total_t, L, W, H):
-    text = f"=== FISA TEHNICA ACTUALIZATA - {total_t} TURNURI ===\n"
-    text += f"Configuratie: {L}m x {W}m x {H}m\n"
-    text += "="*45 + "\n\n"
-    for cat, items in deviz.items():
-        text += f"[{cat.upper()}]\n"
-        for k, v in items.items():
-            text += f" - {k}: {v}\n"
-        text += "\n"
-    return text
