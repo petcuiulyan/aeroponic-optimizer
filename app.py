@@ -118,27 +118,54 @@ elif pagina == "🤖 Automatizare Live":
     for msg in mesaje:
         st.info(f"ℹ️ {msg}")
 
+# app.py (Sectiunea Materiale)
+
 elif pagina == "🛒 Listă Materiale":
-    st.header("🛒 Deviz General Materiale & Specificații")
-    
-    # Calcul deviz folosind funcția corectă cu 5 parametri (L, W, H, total_t, nr_mag)
+    st.header("🛒 Deviz Materiale cu Ajustare Manuală")
+    st.info("Cantitățile sunt calculate automat pe baza layout-ului, dar le poți ajusta folosind butoanele de mai jos.")
+
+    # 1. Calcul inițial
     nr_mag = len(mag_y)
-    deviz = mat.calculeaza_deviz_detaliat(total_t, nr_mag, L, W, H)
+    deviz_initial = mat.calculeaza_deviz_detaliat(total_t, nr_mag, L, W, H)
     
-    # --- BUTON DOWNLOAD PROIECT ---
-    st.subheader("📄 Export Documentație")
-    # Generăm textul folosind toți parametrii necesari
-    doc_txt = mat.genereaza_text_specificatii(deviz, total_t, L, W, H)
+    # 2. State-ul pentru devizul modificat
+    if 'deviz_ajustat' not in st.session_state:
+        st.session_state.deviz_ajustat = deviz_initial
+
+    # Afișare categorii și butoane de ajustare
+    col_a, col_b = st.columns(2)
+    categorii = list(st.session_state.deviz_ajustat.keys())
+    
+    deviz_final_pentru_export = {}
+
+    for i, cat in enumerate(categorii):
+        target_col = col_a if i % 2 == 0 else col_b
+        with target_col.expander(cat, expanded=True):
+            deviz_final_pentru_export[cat] = {}
+            for nume, cant_init in st.session_state.deviz_ajustat[cat].items():
+                # Creăm un rând cu input numeric pentru fiecare piesă
+                # Folosim label invizibil pentru layout curat
+                nueva_cant = st.number_input(
+                    f"{nume}", 
+                    value=float(cant_init), 
+                    step=1.0, 
+                    key=f"input_{cat}_{nume}"
+                )
+                deviz_final_pentru_export[cat][nume] = nueva_cant
+
+    st.divider()
+
+    # 3. Export cu datele AJUSTATE
+    st.subheader("📄 Exportă Proiectul Final")
+    doc_txt = mat.genereaza_text_specificatii(deviz_final_pentru_export, total_t, L, W, H)
     
     st.download_button(
-        label="📥 DESCARCĂ LISTA DE ACHIZIȚII (.txt)",
+        label="📥 DESCARCĂ LISTA ACTUALIZATĂ (.txt)",
         data=doc_txt,
-        file_name=f"plan_achizitii_sera_{total_t}turnuri.txt",
+        file_name=f"plan_achizitii_ajustat_{total_t}turnuri.txt",
         mime="text/plain",
         use_container_width=True
     )
-    
-    st.divider()
 
     # Afișare pe coloane pentru lizibilitate maximă
     col_a, col_b = st.columns(2)
