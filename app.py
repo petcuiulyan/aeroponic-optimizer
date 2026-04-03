@@ -6,15 +6,17 @@ import nutrienti as nutr
 import configuratie_sera as conf
 import materiale_necesare as mat
 
-# Configurare pagină
-st.set_page_config(layout="wide", page_title="Aeroponic Optimizer Pro v2.0", page_icon="🌿")
+# 1. Configurare Pagină
+st.set_page_config(layout="wide", page_title="Aeroponic Optimizer Pro v2.1", page_icon="🌿")
 
-# --- INITIALIZARE SESSION STATE ---
+# 2. Inițializare State (Păstrăm starea automatizării și a modificărilor manuale)
 if 'active_auto' not in st.session_state:
     st.session_state.active_auto = False
+if 'ajustari_manuale' not in st.session_state:
+    st.session_state.ajustari_manuale = {}
 
-# --- SIDEBAR: PARAMETRI DE INTRARE ---
-st.sidebar.title("🍀 Setări Seră")
+# 3. Sidebar - Parametri de Intrare
+st.sidebar.title("🍀 Control Proiect")
 pagina = st.sidebar.radio("Navigare:", ["📐 Layout & Proiectare", "🤖 Automatizare Live", "🛒 Listă Materiale"])
 
 st.sidebar.divider()
@@ -27,26 +29,22 @@ dist_x = st.sidebar.slider("Spațiu între turnuri pe X (m)", 0.1, 0.6, 0.33)
 dist_y = st.sidebar.slider("Spațiu între turnuri pe rând (m)", 0.1, 0.8, 0.5)
 culoar_min = st.sidebar.slider("Lățime culoar lucru (m)", 0.8, 2.0, 1.2)
 
-# --- CALCULE DE BAZĂ (PENTRU TOATE PAGINILE) ---
-L_TECH = 2.5    # Zona rezervată IBC-urilor și panoului
-D_BAZIN = 0.67  # Diametrul bazei turnului
+# 4. Calcule Globale (Layout)
+L_TECH = 2.5
+D_BAZIN = 0.67
 L_UTILA = L - L_TECH
-
-# Calcul layout folosind modulul avansat
-nr_x, y_pos, mag_y, total_t = dist.calculeaza_layout(
-    L_UTILA, W, D_BAZIN + dist_x, D_BAZIN, dist_y, culoar_min
-)
+nr_x, y_pos, mag_y, total_t = dist.calculeaza_layout(L_UTILA, W, D_BAZIN + dist_x, D_BAZIN, dist_y, culoar_min)
 
 # --- LOGICĂ PAGINI ---
 
 if pagina == "📐 Layout & Proiectare":
-    st.header(f"Plan Tehnic Distribuție: {total_t} Turnuri")
+    st.header(f"📐 Plan Tehnic Distribuție: {total_t} Turnuri")
     
-    # Afișare Grafică Detaliată (include IBC, Pompe, Retur)
+    # Randare Grafică
     fig = dist.randeaza_2d(L, W, L_TECH, nr_x, y_pos, mag_y, D_BAZIN + dist_x, D_BAZIN, dist_y, total_t, culoar_min)
     st.pyplot(fig)
     
-    # Informații Tehnice sub grafic
+    # Info Panou Tehnic
     st.divider()
     c1, c2, c3 = st.columns(3)
     dim_sera = conf.get_dimensiuni_sera(L, W, H, L_TECH)
@@ -57,128 +55,81 @@ if pagina == "📐 Layout & Proiectare":
         st.write(f"• Total plante: **{total_t * 40}**")
         st.write(f"• Turnuri: **{total_t}**")
         st.write(f"• Germinare: **{conf.zona_germinare(L_TECH, W)} tăvi**")
-    
     with c2:
         st.subheader("🏠 Volum & Suprafață")
         st.write(f"• Volum aer: **{dim_sera['volum']:.1f} m³**")
         st.write(f"• Suprafață utilă: **{dim_sera['suprafata_utila']:.1f} m²**")
-        
     with c3:
-        st.subheader("💧 Sistem Hidraulic")
-        st.write(f"• Magistrale active: **{len(mag_y)} linii**")
-        st.write(f"• Debit necesar: **{hidraulica['debit_pompa_recomandat']:.2f} LPM**")
+        st.subheader("💧 Hidraulică")
+        st.write(f"• Magistrale: **{len(mag_y)} linii**")
+        st.write(f"• Debit pompă: **{hidraulica['debit_pompa_recomandat']:.2f} LPM**")
 
 elif pagina == "🤖 Automatizare Live":
-    st.header("🤖 Monitorizare și Dozare Preciză (700L)")
+    st.header("🤖 Control Automatizare (700L)")
     
-    col_senzor1, col_senzor2, col_senzor3, col_senzor4 = st.columns(4)
-    ph_live = col_senzor1.number_input("📡 pH Actual", value=7.2, step=0.1)
-    ec_live = col_senzor2.number_input("📡 EC Actual (mS/cm)", value=0.8, step=0.1)
-    col_senzor3.metric("Volum Apă IBC", "700 L", "-300L Siguranță")
-    col_senzor4.metric("Status Sistem", "ACTIV" if st.session_state.active_auto else "OFF")
+    col1, col2, col3 = st.columns(3)
+    ph_live = col1.number_input("📡 pH Actual", value=7.2, step=0.1)
+    ec_live = col2.number_input("📡 EC Actual", value=0.8, step=0.1)
+    status_text = "ACTIV" if st.session_state.active_auto else "SISTEM OPRIT"
+    col3.metric("Status Sistem", status_text)
 
     st.divider()
-
     s1, s2, s3 = st.columns([2, 2, 1])
-    ph_target = s1.slider("Interval pH Dorit", 4.0, 9.0, (5.9, 6.5))
-    ec_target = s2.slider("Interval EC Dorit", 0.5, 3.0, (1.2, 1.6))
+    ph_target = s1.slider("Interval pH", 4.0, 9.0, (5.9, 6.5))
+    ec_target = s2.slider("Interval EC", 0.5, 3.0, (1.2, 1.6))
     
-    if s3.button("🚀 PORNEȘTE SISTEMUL", use_container_width=True): 
+    if s3.button("🚀 START", use_container_width=True): 
         st.session_state.active_auto = True
         st.rerun()
-    if s3.button("🛑 OPRIRE URGENȚĂ", use_container_width=True): 
+    if s3.button("🛑 STOP", use_container_width=True): 
         st.session_state.active_auto = False
         st.rerun()
 
+    # Logica de procesare
     inst_auto = auto.AutomatizareSera()
-    timpi_calculati = nutr.calculeaza_dozare_precisa(ph_live, ec_live, ph_target, ec_target, 700)
-    stari_relee = inst_auto.actualizeaza_stari(timpi_calculati, st.session_state.active_auto)
-    mesaje, _ = inst_auto.proceseaza_automat(ph_live, ec_live, ph_target, ec_target, st.session_state.active_auto)
-
-    st.subheader("⚙️ Status Relee (HPA & Peristaltice)")
-    cols_act = st.columns(5)
-    nume_relee = list(stari_relee.keys())
+    timpi = nutr.calculeaza_dozare_precisa(ph_live, ec_live, ph_target, ec_target, 700)
+    stari_relee = inst_auto.actualizeaza_stari(timpi, st.session_state.active_auto)
     
-    for i, nume in enumerate(nume_relee):
-        with cols_act[i]:
-            activ = stari_relee[nume]
-            t_exec = timpi_calculati.get(nume, 0.0)
-            color = "#2ecc71" if activ else "#bdc3c7"
-            # Etichetă dinamică: dacă e peristaltică și e activă, arată timpul
-            label = f"ON ({t_exec}s)" if activ and t_exec > 0 else ("ACTIVE" if activ else "OFF")
-            
-            st.markdown(f"""
-                <div style="background-color:{color}; color:white; padding:15px; 
-                border-radius:10px; text-align:center; font-weight:bold;">
-                {nume}<br>{label}
-                </div>
-                """, unsafe_allow_html=True)
-
-    st.write("")
-    for msg in mesaje:
-        st.info(f"ℹ️ {msg}")
-
-# app.py (Sectiunea Materiale)
+    st.subheader("⚙️ Status Relee")
+    cols = st.columns(len(stari_relee))
+    for i, (nume, activ) in enumerate(stari_relee.items()):
+        color = "#2ecc71" if activ else "#bdc3c7"
+        cols[i].markdown(f"<div style='background:{color};color:white;padding:10px;border-radius:5px;text-align:center;'>{nume}</div>", unsafe_allow_html=True)
 
 elif pagina == "🛒 Listă Materiale":
-    st.header("🛒 Deviz Materiale cu Ajustare Manuală")
-    st.info("Cantitățile sunt calculate automat pe baza layout-ului, dar le poți ajusta folosind butoanele de mai jos.")
+    st.header("🛒 Deviz Materiale și Ajustări Manuale")
+    st.info("Ajustează cantitățile folosind butoanele +/- de pe fiecare piesă.")
 
-    # 1. Calcul inițial
-    nr_mag = len(mag_y)
-    deviz_initial = mat.calculeaza_deviz_detaliat(total_t, nr_mag, L, W, H)
-    
-    # 2. State-ul pentru devizul modificat
-    if 'deviz_ajustat' not in st.session_state:
-        st.session_state.deviz_ajustat = deviz_initial
+    # Calcul inițial din modul
+    deviz_calc = mat.calculeaza_deviz_detaliat(total_t, len(mag_y), L, W, H)
+    deviz_final = {}
 
-    # Afișare categorii și butoane de ajustare
-    col_a, col_b = st.columns(2)
-    categorii = list(st.session_state.deviz_ajustat.keys())
-    
-    deviz_final_pentru_export = {}
+    col_m1, col_m2 = st.columns(2)
+    categorii = list(deviz_calc.keys())
 
-    for i, cat in enumerate(categorii):
-        target_col = col_a if i % 2 == 0 else col_b
-        with target_col.expander(cat, expanded=True):
-            deviz_final_pentru_export[cat] = {}
-            for nume, cant_init in st.session_state.deviz_ajustat[cat].items():
-                # Creăm un rând cu input numeric pentru fiecare piesă
-                # Folosim label invizibil pentru layout curat
-                nueva_cant = st.number_input(
-                    f"{nume}", 
+    for idx, cat in enumerate(categorii):
+        target = col_m1 if idx % 2 == 0 else col_m2
+        with target.expander(f"📦 {cat}", expanded=True):
+            deviz_final[cat] = {}
+            for piesa, cant_init in deviz_calc[cat].items():
+                # Buton de ajustare manuală pentru fiecare piesă
+                ajustata = st.number_input(
+                    f"{piesa}", 
                     value=float(cant_init), 
                     step=1.0, 
-                    key=f"input_{cat}_{nume}"
+                    key=f"adj_{cat}_{piesa}"
                 )
-                deviz_final_pentru_export[cat][nume] = nueva_cant
+                deviz_final[cat][piesa] = ajustata
 
     st.divider()
-
-    # 3. Export cu datele AJUSTATE
-    st.subheader("📄 Exportă Proiectul Final")
-    doc_txt = mat.genereaza_text_specificatii(deviz_final_pentru_export, total_t, L, W, H)
     
+    # Export TXT
+    st.subheader("📄 Generare Documentație Finală")
+    continut_txt = mat.genereaza_text_specificatii(deviz_final, total_t, L, W, H)
     st.download_button(
         label="📥 DESCARCĂ LISTA ACTUALIZATĂ (.txt)",
-        data=doc_txt,
-        file_name=f"plan_achizitii_ajustat_{total_t}turnuri.txt",
+        data=continut_txt,
+        file_name=f"deviz_sera_{total_t}turnuri.txt",
         mime="text/plain",
         use_container_width=True
     )
-
-    # Afișare pe coloane pentru lizibilitate maximă
-    col_a, col_b = st.columns(2)
-    categorii = list(deviz.keys())
-    
-    for i, cat in enumerate(categorii):
-        # Distribuim categoriile egal pe cele două coloane
-        target_col = col_a if i % 2 == 0 else col_b
-        with target_col.expander(f"📦 {cat}", expanded=True):
-            # Creăm un tabel simulat pentru claritate
-            for nume, cant in deviz[cat].items():
-                c_nume, c_val = st.columns([3, 1])
-                c_nume.write(f"🔹 {nume}")
-                c_val.write(f"**{cant}**")
-    
-    st.info("💡 **Sfat Tehnic:** Cantitățile de folie și cabluri includ o marjă de siguranță pentru montaj. Verificați conexiunile IP55 înainte de punerea sub tensiune a pompelor.")
