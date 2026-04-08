@@ -52,7 +52,7 @@ if pagina == "📐 Layout & Proiectare":
     
     with c1:
         st.subheader("📊 Capacitate")
-        st.write(f"• Total plante: **{total_t * 40}**")
+        st.write(f"• Total plante: **{total_t * 112}**")
         st.write(f"• Turnuri: **{total_t}**")
         st.write(f"• Germinare: **{conf.zona_germinare(L_TECH, W)} tăvi**")
     with c2:
