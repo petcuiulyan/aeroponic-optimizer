@@ -10,5 +10,7 @@ def get_dimensiuni_sera(L, W, H, L_tech):
 
 def zona_germinare(L_tech, W):
     # Estimăm capacitatea tăvilor de germinare în zona tehnică
-    nr_tavi = (total_turnuri*112)/200 # 0.5mp per tavă
-    return nr_tavi
+    nr_tavi = (float(total_turnuri)*112)/200 # 0.5mp per tavă
+    return round(nr_tavi, 2)
+    except(ValueError, TypeError):
+    return 0
