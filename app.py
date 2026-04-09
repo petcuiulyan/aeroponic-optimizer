@@ -54,7 +54,7 @@ if pagina == "📐 Layout & Proiectare":
         st.subheader("📊 Capacitate")
         st.write(f"• Total plante: **{total_t * 112}**")
         st.write(f"• Turnuri: **{total_t}**")
-        st.write(f"• Germinare: **{conf.zona_germinare(L_TECH, W)} tăvi**")
+        st.write(f"• Germinare: **{conf.zona_germinare(total_t, L_TECH, W)} tăvi**")
     with c2:
         st.subheader("🏠 Volum & Suprafață")
         st.write(f"• Volum aer: **{dim_sera['volum']:.1f} m³**")
