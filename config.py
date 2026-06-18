@@ -47,4 +47,4 @@ VALIDATION = {
 }
 
 # Plants per Tower
-PLANTS_PER_TOWER = 112
+PLANTS_PER_TOWER = 52
