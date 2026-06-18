@@ -108,12 +108,14 @@ def render_layout_page():
     
     dim_sera = conf.get_dimensiuni_sera(L, W, H, L_TECH)
     hidraulica = nutr.calcul_hidraulic(total_t, L_UTILA)
+    so_value = conf.calcul_so(L, W)
     
     with c1:
         st.subheader("📊 Capacitate")
         st.write(f"• Total plante: **{total_t * config.PLANTS_PER_TOWER}**")
         st.write(f"• Turnuri: **{total_t}**")
         st.write(f"• Germinare: **{conf.zona_germinare(total_t, L_TECH, W)} tăvi**")
+        st.write(f"• SO (Producție Specifică): **{so_value:.2f}**")
     
     with c2:
         st.subheader("🏠 Volum & Suprafață")
