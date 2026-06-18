@@ -48,3 +48,13 @@ VALIDATION = {
 
 # Plants per Tower
 PLANTS_PER_TOWER = 52
+
+# SO (Specific Output) Calculation
+# Indoor standard: 22000 plants / 10000 sq meters
+# Formula: (22000 / 10000) * total_area * 13
+SO_CALCULATION = {
+    "indoor_standard_plants": 22000,
+    "indoor_standard_area": 10000,  # sq meters
+    "multiplier": 13,
+    "formula": "2.2 * total_area * 13"  # Simplified: (22000/10000) * total_area * 13
+}
