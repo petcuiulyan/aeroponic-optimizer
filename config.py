@@ -9,7 +9,7 @@ DEFAULT_DIMENSIONS = {
     "width": 11.0,
     "height": 4.0,
     "tech_zone": 2.5,
-    "basin_diameter": 0.67
+    "basin_diameter": 0.77
 }
 
 # Spacing & Layout Ranges
