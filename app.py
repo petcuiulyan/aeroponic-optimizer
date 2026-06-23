@@ -9,8 +9,8 @@ import configuratie_sera as conf
 import materiale_necesare as mat
 import config
 except ImportError as e:
-    st.error(f"Eroare import module: {e}")
-    st.stop()
+st.error(f"Eroare import module: {e}")
+st.stop()
 
 st.set_page_config(layout="wide", page_title="Greenhouse Designer")
 
