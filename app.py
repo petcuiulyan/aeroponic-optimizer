@@ -9,7 +9,7 @@ import configuratie_sera as conf
 import materiale_necesare as mat
 import config
 
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+st.write("Fisiere in folder:", os.listdir())
 st.set_page_config(layout="wide", page_title="Greenhouse Designer")
 
 # ===== SIDEBAR =====
