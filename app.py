@@ -1,12 +1,15 @@
 import streamlit as st
 import plotly.graph_objects as go
 import numpy as np
+import sys
+import os
 
 import distributie_turnuri as dist
 import configuratie_sera as conf
 import materiale_necesare as mat
 import config
 
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 st.set_page_config(layout="wide", page_title="Greenhouse Designer")
 
 # ===== SIDEBAR =====
