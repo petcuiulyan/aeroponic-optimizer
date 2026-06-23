@@ -4,10 +4,10 @@ import numpy as np
 import sys
 import os
 
-    import distributie_turnuri as dist
-    import configuratie_sera as conf
-    import materiale_necesare as mat
-    import config
+import distributie_turnuri as dist
+import configuratie_sera as conf
+import materiale_necesare as mat
+import config
 except ImportError as e:
     st.error(f"Eroare import module: {e}")
     st.stop()
