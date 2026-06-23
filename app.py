@@ -4,12 +4,15 @@ import numpy as np
 import sys
 import os
 
-import distributie_turnuri as dist
-import configuratie_sera as conf
-import materiale_necesare as mat
-import config
+try:
+    import distributie_turnuri as dist
+    import configuratie_sera as conf
+    import materiale_necesare as mat
+    import config
+except ImportError as e:
+    st.error(f"Eroare import module: {e}")
+    st.stop()
 
-st.write("Fisiere in folder:", os.listdir())
 st.set_page_config(layout="wide", page_title="Greenhouse Designer")
 
 # ===== SIDEBAR =====
