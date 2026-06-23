@@ -33,6 +33,5 @@ def randeaza_2d(L, W, L_tech, nr_x, y_positions, pas_x, D):
 
     ax.set_title("Layout Turnuri")
     ax.set_aspect('equal')
-
     return fig
 ``
