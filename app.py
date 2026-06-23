@@ -4,7 +4,6 @@ import numpy as np
 import sys
 import os
 
-try:
     import distributie_turnuri as dist
     import configuratie_sera as conf
     import materiale_necesare as mat
